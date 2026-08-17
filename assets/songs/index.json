@@ -1,0 +1,40 @@
+[
+  {
+    "file": "01-first-summer.mp3",
+    "slug": "01-first-summer",
+    "lyrics": [
+      {
+        "t": 5.0,
+        "text": "We ran where the tall grass grew"
+      },
+      {
+        "t": 11.2,
+        "text": "Red flowers caught against our shoes"
+      },
+      {
+        "t": 17.4,
+        "text": "Stayed outside past half-past nine"
+      },
+      {
+        "t": 23.6,
+        "text": "Like summer had forgotten time"
+      },
+      {
+        "t": 31.0,
+        "text": "We didn't know it was the last"
+      },
+      {
+        "t": 37.2,
+        "text": "Golden hours moving fast"
+      },
+      {
+        "t": 43.4,
+        "text": "The whole wide world was waiting there"
+      },
+      {
+        "t": 49.6,
+        "text": "We were running without a care"
+      }
+    ]
+  }
+]

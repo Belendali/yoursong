@@ -1,14 +1,5 @@
 .DS_Store
 
-# Audio stays local for now — pushing Suno renders to a public repo is a
-# licensing call, not a technical one. Lyrics (.lrc) are tracked.
-assets/songs/*.mp3
-assets/songs/*.m4a
-assets/songs/*.wav
-assets/songs/*.ogg
-# regenerate with tools/index-songs.py once the audio above is committed
-assets/songs/index.json
-
 *.log
 node_modules/
 .vscode/

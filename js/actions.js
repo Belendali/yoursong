@@ -94,6 +94,18 @@ function stopFile() {
   if (el) el.pause()
 }
 
+let fileArmed = false
+function armFileGesture() {
+  if (fileArmed) return
+  fileArmed = true
+  const go = () => {
+    fileArmed = false
+    if (store.playing && el) el.play().catch(() => {})
+  }
+  window.addEventListener('pointerdown', go, { once: true })
+  window.addEventListener('keydown', go, { once: true })
+}
+
 /* The synth loops every few bars, so the needle is driven by the clock over
    the record's printed length instead — that is what the arm tracks. */
 let clock = null
@@ -138,13 +150,19 @@ export async function selectRecord(id, { resume = false } = {}) {
       try {
         await playFile(rec, from)
       } catch (e) {
-        // the track did not load (a static host without the file) — the
-        // synth still knows how to play this record
-        console.warn('[yoursong] falling back to the synth', e)
-        rec.audio = null
-        rec.lyrics = []
-        startClock(rec, from)
-        await player.play(rec)
+        if (e && e.name === 'NotAllowedError') {
+          // autoplay policy, not a broken file — wait for a real tap
+          armFileGesture()
+          toast('Tap once to play')
+        } else {
+          // the track is genuinely not there (a static host without the
+          // file) — the synth still knows how to play this record
+          console.warn('[yoursong] no track, falling back to the synth', e)
+          rec.audio = null
+          rec.lyrics = []
+          startClock(rec, from)
+          await player.play(rec)
+        }
       }
     } else {
       stopFile()
