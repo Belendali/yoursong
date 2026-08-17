@@ -6,6 +6,8 @@ assets/songs/*.mp3
 assets/songs/*.m4a
 assets/songs/*.wav
 assets/songs/*.ogg
+# regenerate with tools/index-songs.py once the audio above is committed
+assets/songs/index.json
 
 *.log
 node_modules/

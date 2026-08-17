@@ -10,15 +10,20 @@ export function recordById(id) {
    and that record plays the real track instead of the built-in synth. */
 
 export async function detectAudio() {
-  let names = []
-  try {
-    // serve.py lists assets/songs; a static host can ship the same JSON
-    const res = await fetch('./songs.json', { cache: 'no-store' })
-    if (!res.ok) return
-    names = await res.json()
-  } catch {
-    return // no listing — every record stays on the synth
+  /* serve.py lists assets/songs live; on a static host the same JSON is
+     committed as assets/songs/index.json (see tools/index-songs.py) */
+  let names = null
+  for (const url of ['./songs.json', './assets/songs/index.json']) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' })
+      if (!res.ok) continue
+      names = await res.json()
+      break
+    } catch {
+      /* try the next one */
+    }
   }
+  if (!names) return // no listing — every record stays on the synth
   for (const rec of store.records) {
     const hit = names.find((s) => s.slug === rec.slug)
     if (!hit) continue
@@ -130,7 +135,17 @@ export async function selectRecord(id, { resume = false } = {}) {
     if (rec.audio) {
       player.stop()
       stopClock()
-      await playFile(rec, from)
+      try {
+        await playFile(rec, from)
+      } catch (e) {
+        // the track did not load (a static host without the file) — the
+        // synth still knows how to play this record
+        console.warn('[yoursong] falling back to the synth', e)
+        rec.audio = null
+        rec.lyrics = []
+        startClock(rec, from)
+        await player.play(rec)
+      }
     } else {
       stopFile()
       startClock(rec, from)
