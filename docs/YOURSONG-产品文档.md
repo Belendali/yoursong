@@ -3,7 +3,7 @@
 > 一句话：**把你的故事变成一首歌。**
 > Landing 负责"让人听见"，App 负责"让人写出来"，唱片架负责"让人留下来"。
 
-版本 v0.3 · 2026-08-17 · 状态：Landing 已按 Figma 还原完成，App 流程待一起细化
+版本 v0.4 · 2026-08-17 · 状态：Landing 已上线可分享（真音频 + 歌词），App 流程待一起细化
 产品名：**YOURSONG**（原 ANSWER，2026-08-17 改名；分享域名 `yoursong.fm`）
 
 ---
@@ -102,10 +102,14 @@ App（产品实际使用界面）
 标题弧排 + SIDE A/B + STEREO 33⅓ + 中心白标），3D 里叠一层沟槽粗糙度贴图产生扫光。
 文案（标题 + 故事）与画板一一对应。
 
-### 3.5 音频
+### 3.5 音频与歌词
 
-本地合成，每张唱片由 seed 决定调式、速度与编配，含黑胶底噪。
-唱针进度按唱片印着的时长走真实时钟（不跟随合成器的循环），暂停/续播保留位置。
+- 有真音频的唱片放真音频：把文件丢进 `assets/songs/`，命名跟唱片图一致（`01-first-summer.mp3`）即可，无需改代码
+- 没有文件的唱片继续用本地合成器（seed 决定调式、速度与编配，含黑胶底噪）
+- 歌词按优先级取：同名 `.lrc`（带时间轴）→ 同名 `.txt` → mp3 自带的 ID3 USLT 帧（Suno 导出自带）
+- 播放时唱片机下方显示**当前这一句**，小字、淡入淡出；有时间轴按时间轴，没有就按时长均分
+- 面板时长直接读文件；唱针进度按真实时钟走，暂停/续播保留位置
+- 当前已上线：FIRST SUMMER = Golden Hours（Suno，60 秒试听版），歌词 8 句
 
 ### 3.6 规则
 
@@ -221,6 +225,9 @@ Record {
 - 唱片素材：`assets/covers/*.png`，Figma 导出的成品 picture disc，直接当贴图
 - 目录：`index.html · css/app.css · js/{main,store,audio,textures,actions}.js · js/scene/* · js/ui/App.js`
 - 本地预览：`python3 ~/answer-song-studio/serve.py`（端口 8480，响应带 `no-store`，避免浏览器缓存旧模块）
+- 仓库：https://github.com/Belendali/yoursong
+- **在线 demo：https://belendali.github.io/yoursong/** （GitHub Pages，main 分支根目录，push 即自动重建）
+- 静态托管没有 serve.py 的 `/songs.json`，改读 `assets/songs/index.json`；加了歌之后跑 `python3 tools/index-songs.py` 重新生成
 
 ---
 
