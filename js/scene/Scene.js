@@ -52,7 +52,7 @@ const World = defineComponent({
       new THREE.MeshBasicMaterial({
         map: radialShadowTexture(),
         transparent: true,
-        opacity: 0.38,
+        opacity: 0.26,
         depthWrite: false,
       }),
     )
@@ -360,7 +360,7 @@ const World = defineComponent({
       platterSpin = damp(platterSpin, onAir ? 1 : 0, 3, dt)
       deck.platter.rotation.y += SPIN_33 * platterSpin * dt
 
-      blob.material.opacity = 0.38 - detail * 0.1
+      blob.material.opacity = 0.26 - detail * 0.08
     }
     onBeforeRender(({ delta }) => tick(delta))
 

@@ -45,9 +45,18 @@ export const App = defineComponent({
       }
     }
 
+    /* Read the scroll position every frame rather than listening for events:
+       restores, bfcache and programmatic jumps all skip the scroll event, and
+       a property read per frame is cheaper than the bugs that causes. */
+    let raf = 0
+    function follow() {
+      onScroll()
+      raf = requestAnimationFrame(follow)
+    }
+
     onMounted(() => {
       onResize()
-      window.addEventListener('scroll', onScroll, { passive: true })
+      follow()
       window.addEventListener('resize', onResize)
       window.addEventListener('keydown', onKey)
       document.addEventListener('visibilitychange', () => {
@@ -55,16 +64,29 @@ export const App = defineComponent({
       })
     })
     onBeforeUnmount(() => {
-      window.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(raf)
       window.removeEventListener('resize', onResize)
       window.removeEventListener('keydown', onKey)
     })
 
-    /* the song screen takes over the page, so the scroller parks */
+    /* The song screen takes over the page, so the scroller parks. Locking the
+       body clamps scrollY to 0, which would drop the stage back to the hero —
+       so pin the stage while it is open and put the scroll back on the way out. */
+    let parkedY = 0
     watch(
       () => store.detail,
       (on) => {
-        document.body.style.overflow = on ? 'hidden' : ''
+        if (on) {
+          parkedY = window.scrollY || window.innerHeight
+          store.stage = 1
+          document.body.style.overflow = 'hidden'
+        } else {
+          document.body.style.overflow = ''
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: parkedY, behavior: 'instant' })
+            onScroll()
+          })
+        }
       },
     )
 
@@ -84,9 +106,22 @@ export const App = defineComponent({
       const k = smooth(clamp(store.stage / 0.34, 0, 1))
       return { opacity: 1 - k, transform: `translateY(${(-26 * k).toFixed(1)}px)` }
     })
+    /* the hint says its piece once the strip is out, then gets out of the way */
+    const hintDone = ref(false)
+    let hintTimer = null
+    watch(
+      () => store.stage > 0.55 && !store.detail,
+      (out) => {
+        clearTimeout(hintTimer)
+        if (out && !hintDone.value) hintTimer = setTimeout(() => (hintDone.value = true), 6000)
+      },
+      { immediate: true },
+    )
+    watch(() => store.hoverId, (id) => id && (hintDone.value = true))
+
     const hintStyle = computed(() => {
       const k = smooth(clamp((store.stage - 0.55) / 0.35, 0, 1))
-      return { opacity: store.detail ? 0 : k }
+      return { opacity: store.detail || hintDone.value ? 0 : k }
     })
 
     const rec = activeRecord
