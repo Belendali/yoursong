@@ -123,7 +123,7 @@ body {
 
 .hint {
   position: fixed;
-  top: 52vh;
+  top: 60vh;
   left: 0;
   right: 0;
   z-index: 5;
@@ -135,6 +135,29 @@ body {
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
+
+/* the sung line, centred under the deck */
+.lyric {
+  position: fixed;
+  top: 66vh;
+  left: 31.1vw;
+  z-index: 5;
+  width: min(420px, 36vw);
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+.lyric p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.62);
+}
+.line-enter-active,
+.line-leave-active { transition: opacity 0.35s ease, transform 0.35s ease; }
+.line-enter-from { opacity: 0; transform: translateY(6px); }
+.line-leave-to { opacity: 0; transform: translateY(-6px); }
 
 /* ---------- song screen (song3) ---------- */
 

@@ -11,7 +11,8 @@ import { selectRecord, togglePlay } from '../actions.js'
 const { damp, lerp, clamp, smoothstep } = THREE.MathUtils
 
 const FOV = 30
-const DECK_YAW = 0.06 // matches the 3/4 view of the Figma render
+const DECK_YAW = 0 // squared up to the lens; the mouse turns it from here
+const DECK_TURN = 0.15 // how far it follows the pointer, in radians
 
 /* Where things sit, in Figma frame coordinates (0..1 of a 1280×830 board).
    song  → deck centred          song2 → deck up top, records fan in below
@@ -255,6 +256,10 @@ const World = defineComponent({
       deckPos.y = damp(deckPos.y, anchorV.y + Math.sin(t * 0.5) * 0.02, 4.2, dt)
       deckPos.z = damp(deckPos.z, anchorV.z, 4.2, dt)
       deckRig.position.copy(deckPos)
+
+      /* the deck sits square to the lens and turns a little with the mouse */
+      deckRig.rotation.y = damp(deckRig.rotation.y, DECK_YAW + ndc.x * DECK_TURN, 3, dt)
+      deckRig.rotation.x = damp(deckRig.rotation.x, ndc.y * DECK_TURN * 0.28, 3, dt)
       deckRig.updateMatrixWorld()
       deckSlotWorld.copy(DECK_SLOT).applyMatrix4(deckRig.matrixWorld)
 
@@ -264,7 +269,9 @@ const World = defineComponent({
       const ringDist = deckDist * 0.82
       const half = Math.tan(THREE.MathUtils.degToRad(FOV) / 2)
       const frameW = 2 * ringDist * half * aspect
-      const discScale = 0.12 * frameW // each record reads ~24% of the frame
+      const frameH = 2 * ringDist * half
+      // sized off the frame height so a wide window does not blow them up
+      const discScale = Math.min(0.145 * frameH, 0.09 * frameW)
 
       const ru = lerp(RING_AT.shelf.u, RING_AT.detail.u, detail)
       const rv = lerp(RING_AT.shelf.v, RING_AT.detail.v, detail)
@@ -406,7 +413,7 @@ export const Stage = defineComponent({
         :tone-mapping-exposure="1.0"
         window-size
       >
-        <TresPerspectiveCamera :position="[-0.9, 4.35, 8.7]" :fov="fov" :near="0.1" :far="80" />
+        <TresPerspectiveCamera :position="[0, 4.35, 8.7]" :fov="fov" :near="0.1" :far="80" />
         <World />
       </TresCanvas>
     </div>

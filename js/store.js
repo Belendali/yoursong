@@ -141,8 +141,9 @@ export function makeRecord(spec) {
     story: spec.story,
     side: spec.side || 'SIDE A',
     src: `./assets/covers/${spec.cover}.png`,
-    /* set at boot if assets/songs/<cover>.mp3 exists — see detectAudio() */
+    /* both filled at boot from /songs.json — see detectAudio() */
     audio: null,
+    lyrics: [],
     slug: spec.cover,
     vibe: spec.vibe,
     seed: spec.seed ?? hashString(spec.title),
@@ -167,6 +168,7 @@ export const store = reactive({
   hoverId: null,
   playing: false,
   needle: 0, // 0..1 tonearm travel
+  time: 0, // seconds into the track, for the lyric line
 
   toast: '',
 })

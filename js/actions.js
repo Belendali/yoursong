@@ -20,9 +20,29 @@ export async function detectAudio() {
     return // no listing — every record stays on the synth
   }
   for (const rec of store.records) {
-    const hit = names.find((f) => f.replace(/\.[^.]+$/, '') === rec.slug)
-    if (hit) rec.audio = `./assets/songs/${hit}`
+    const hit = names.find((s) => s.slug === rec.slug)
+    if (!hit) continue
+    rec.audio = `./assets/songs/${hit.file}`
+    rec.lyrics = hit.lyrics || []
   }
+}
+
+/* the line to show right now — timed if the .lrc gave us stamps, otherwise
+   spread evenly across the track so it still walks along with the song */
+export function lyricAt(rec, seconds, progress) {
+  const lines = rec?.lyrics
+  if (!lines || !lines.length) return ''
+  if (lines[0].t !== undefined) {
+    let cur = ''
+    for (const line of lines) {
+      if (seconds + 0.15 >= line.t) cur = line.text
+      else break
+    }
+    return cur
+  }
+  const lead = 0.06
+  const i = Math.floor(((progress - lead) / (1 - lead * 2)) * lines.length)
+  return lines[Math.max(0, Math.min(lines.length - 1, i))].text
 }
 
 let el = null
@@ -31,6 +51,7 @@ function element() {
     el = new Audio()
     el.preload = 'auto'
     el.addEventListener('timeupdate', () => {
+      store.time = el.currentTime
       if (el.duration) store.needle = Math.min(1, el.currentTime / el.duration)
     })
     el.addEventListener('loadedmetadata', () => {
@@ -82,6 +103,7 @@ function startClock(rec, from = 0) {
   const t0 = performance.now() - from * total * 1000
   clock = setInterval(() => {
     const p = (performance.now() - t0) / 1000 / total
+    store.time = p * total
     if (p >= 1) {
       store.needle = 1
       stopClock()

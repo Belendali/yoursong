@@ -1,6 +1,6 @@
 import { defineComponent, computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { store, activeRecord } from '../store.js'
-import { togglePlay, closeDetail, stepRecord } from '../actions.js'
+import { togglePlay, closeDetail, stepRecord, lyricAt } from '../actions.js'
 import { Stage } from '../scene/Scene.js'
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -90,6 +90,10 @@ export const App = defineComponent({
     })
 
     const rec = activeRecord
+    /* the line being sung right now, under the deck */
+    const lyric = computed(() =>
+      store.detail ? lyricAt(rec.value, store.time, store.needle) : '',
+    )
     const progress = computed(() => `${(store.needle * 100).toFixed(1)}%`)
     const elapsed = computed(() => {
       const r = rec.value
@@ -101,7 +105,7 @@ export const App = defineComponent({
     })
 
     return {
-      store, rec, ctaEl, ctaStyle, heroStyle, hintStyle, progress, elapsed,
+      store, rec, ctaEl, ctaStyle, heroStyle, hintStyle, progress, elapsed, lyric,
       togglePlay, closeDetail, stepRecord,
     }
   },
@@ -127,6 +131,13 @@ export const App = defineComponent({
     </main>
 
     <p class="hint" :style="hintStyle">Drag to browse · click a record to play it</p>
+
+    <!-- the line being sung, small, under the deck -->
+    <div class="lyric" v-if="lyric">
+      <transition name="line" mode="out-in">
+        <p :key="lyric">{{ lyric }}</p>
+      </transition>
+    </div>
 
     <transition name="panel">
       <aside class="song-panel" v-if="store.detail && rec">
