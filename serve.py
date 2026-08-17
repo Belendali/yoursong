@@ -6,14 +6,34 @@ stale code after an edit — so every response goes out as no-store.
 """
 import functools
 import http.server
+import json
 import os
 import socketserver
 
 PORT = int(os.environ.get("PORT", "8480"))
 ROOT = os.path.dirname(os.path.abspath(__file__))
+SONGS = os.path.join(ROOT, "assets", "songs")
+AUDIO = (".mp3", ".m4a", ".wav", ".ogg")
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        # what is actually sitting in assets/songs — so dropping a file in is
+        # all it takes for a record to play the real track
+        if self.path.split("?")[0] == "/songs.json":
+            try:
+                names = sorted(f for f in os.listdir(SONGS) if f.lower().endswith(AUDIO))
+            except FileNotFoundError:
+                names = []
+            body = json.dumps(names).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        super().do_GET()
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")

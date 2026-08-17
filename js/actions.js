@@ -5,6 +5,69 @@ export function recordById(id) {
   return store.records.find((r) => r.id === id) || null
 }
 
+/* ---------- real recordings ----------
+   Drop a file in assets/songs/ named after the artwork (01-first-summer.mp3)
+   and that record plays the real track instead of the built-in synth. */
+
+export async function detectAudio() {
+  let names = []
+  try {
+    // serve.py lists assets/songs; a static host can ship the same JSON
+    const res = await fetch('./songs.json', { cache: 'no-store' })
+    if (!res.ok) return
+    names = await res.json()
+  } catch {
+    return // no listing — every record stays on the synth
+  }
+  for (const rec of store.records) {
+    const hit = names.find((f) => f.replace(/\.[^.]+$/, '') === rec.slug)
+    if (hit) rec.audio = `./assets/songs/${hit}`
+  }
+}
+
+let el = null
+function element() {
+  if (!el) {
+    el = new Audio()
+    el.preload = 'auto'
+    el.addEventListener('timeupdate', () => {
+      if (el.duration) store.needle = Math.min(1, el.currentTime / el.duration)
+    })
+    el.addEventListener('loadedmetadata', () => {
+      const rec = recordById(el.dataset.rec)
+      if (rec && el.duration) rec.length = clockText(el.duration)
+    })
+    el.addEventListener('ended', () => {
+      store.needle = 1
+      store.playing = false
+    })
+  }
+  return el
+}
+
+function clockText(sec) {
+  const s = Math.round(sec)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+async function playFile(rec, from) {
+  const a = element()
+  if (a.dataset.rec !== rec.id) {
+    a.dataset.rec = rec.id
+    a.src = rec.audio
+  }
+  const seek = () => {
+    if (a.duration) a.currentTime = from * a.duration
+  }
+  if (a.readyState >= 1) seek()
+  else a.addEventListener('loadedmetadata', seek, { once: true })
+  await a.play()
+}
+
+function stopFile() {
+  if (el) el.pause()
+}
+
 /* The synth loops every few bars, so the needle is driven by the clock over
    the record's printed length instead — that is what the arm tracks. */
 let clock = null
@@ -41,11 +104,18 @@ export async function selectRecord(id, { resume = false } = {}) {
   store.needle = from
   store.playing = true
   if (!resume) rec.plays++
-  startClock(rec, from)
   try {
-    await player.play(rec)
-    // autoplay policy: the context stays suspended until a real gesture
-    if (player.ctx && player.ctx.state !== 'running') armGesture()
+    if (rec.audio) {
+      player.stop()
+      stopClock()
+      await playFile(rec, from)
+    } else {
+      stopFile()
+      startClock(rec, from)
+      await player.play(rec)
+      // autoplay policy: the context stays suspended until a real gesture
+      if (player.ctx && player.ctx.state !== 'running') armGesture()
+    }
   } catch (e) {
     console.error('[yoursong] playback failed', e)
     stopClock()
@@ -77,6 +147,7 @@ export function togglePlay() {
   }
   if (store.playing) {
     player.stop()
+    stopFile()
     stopClock()
     store.playing = false
   } else {
@@ -87,6 +158,7 @@ export function togglePlay() {
 /* back to the wall of records */
 export function closeDetail() {
   player.stop()
+  stopFile()
   stopClock()
   store.playing = false
   store.detail = false

@@ -115,7 +115,7 @@ const World = defineComponent({
     const ray = new THREE.Raycaster()
     const ndc = new THREE.Vector2()
     const pointer = { down: false, x: 0, moved: 0 }
-    const ring = { spin: 0 }
+    const ring = { spin: 0, band: 0 }
     let hostEl = null
 
     const setNdc = (e) => {
@@ -275,11 +275,20 @@ const World = defineComponent({
       const n = Math.max(store.records.length, 1)
       // spacing wide enough that the wrap always happens off-frame
       const gap = Math.max(discScale * 2.24, (frameW * 1.35) / n)
-      const band = gap * n
+
+      /* A record that rides up to the deck leaves the strip, so the rest
+         close ranks — the spacing on screen stays even either way. */
+      const onStrip = store.records.filter(
+        (r) => !(r.id === store.activeId && store.detail),
+      )
+      ring.band = damp(ring.band || gap * n, gap * Math.max(onStrip.length, 1), 3, dt)
+      const band = ring.band
+
       // slow drift; eases off while you are picking one out
       const drift = (store.hoverId ? 0.16 : 1) * (store.detail ? 0.45 : 1) * gap * 0.16
       ring.spin = (ring.spin + drift * dt) % band
-      store.records.forEach((rec, idx) => {
+
+      store.records.forEach((rec) => {
         const mesh = meshes.get(rec.id)
         if (!mesh) return
         const a = mesh.userData.anim
@@ -289,8 +298,13 @@ const World = defineComponent({
         a.onDeck = damp(a.onDeck, isActive && store.detail ? 1 : 0, 3.2, dt)
         a.hover = damp(a.hover, isHover && !isActive ? 1 : 0, 9, dt)
 
-        /* slot on the strip: wrapped into the band, then centred */
-        let sx = idx * gap - ring.spin
+        /* slot on the strip: wrapped into the band, then centred.
+           The index eases so neighbours slide over rather than jump. */
+        const want = onStrip.indexOf(rec)
+        if (a.slot === undefined) a.slot = want < 0 ? 0 : want
+        if (want >= 0) a.slot = damp(a.slot, want, 3, dt)
+
+        let sx = a.slot * gap - ring.spin
         sx = (((sx + band / 2) % band) + band) % band // 0 … band
         sx -= band / 2
         slot

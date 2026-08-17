@@ -141,6 +141,9 @@ export function makeRecord(spec) {
     story: spec.story,
     side: spec.side || 'SIDE A',
     src: `./assets/covers/${spec.cover}.png`,
+    /* set at boot if assets/songs/<cover>.mp3 exists — see detectAudio() */
+    audio: null,
+    slug: spec.cover,
     vibe: spec.vibe,
     seed: spec.seed ?? hashString(spec.title),
     tempo: spec.tempo ?? vibe.tempo,
